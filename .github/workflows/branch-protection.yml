@@ -30,7 +30,7 @@ jobs:
   setup-branch-protection:
     name: Configurar proteção da main
     if: ${{ !github.event.repository.is_template }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Validar token de administração
         env:

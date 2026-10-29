@@ -11,7 +11,7 @@ on:
 jobs:
   validate-spec:
     if: ${{ !github.event.repository.is_template }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
 
