@@ -1,51 +1,57 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect } from 'vitest';
 import { useState } from 'react';
-import UnitToggle from '../../src/components/UnitToggle';
+import { describe, expect, it } from 'vitest';
 import CurrentWeather from '../../src/components/CurrentWeather';
-import type { City, CurrentWeather as CurrentWeatherType, Unit } from '../../src/types/weather';
+import ForecastCard from '../../src/components/ForecastCard';
+import UnitToggle from '../../src/components/UnitToggle';
+import type { ForecastDay, Unit } from '../../src/types/weather';
 
-const city: City = {
-  id: 1,
-  name: 'Seattle',
-  country: 'Estados Unidos',
-  admin1: 'Washington',
-  latitude: 47.6,
-  longitude: -122.33,
+const forecastDay: ForecastDay = {
+  date: '2026-10-29',
+  minimumC: -40,
+  maximumC: 100,
+  weatherCode: 0,
 };
 
-const current: CurrentWeatherType = {
-  time: '2026-06-16T12:00',
-  temperature: 0, // 0°C => 32°F (fácil de verificar)
-  humidity: 80,
-  windSpeed: 10,
-  pressure: 1015,
-  precipitation: 0,
-  weatherCode: 3,
-};
-
-function Harness() {
+function WeatherWithUnitToggle() {
   const [unit, setUnit] = useState<Unit>('celsius');
+
   return (
     <>
       <UnitToggle unit={unit} onChange={setUnit} />
-      <CurrentWeather city={city} current={current} unit={unit} />
+      <CurrentWeather
+        city={{ name: 'São Paulo', latitude: -23.55, longitude: -46.63 }}
+        current={{ temperatureC: 0, weatherCode: 0 }}
+        unit={unit}
+      />
+      <ForecastCard day={forecastDay} index={0} unit={unit} />
     </>
   );
 }
 
-describe('UnitToggle + CurrentWeather', () => {
-  it('converte a temperatura ao alternar a unidade', async () => {
-    render(<Harness />);
-    expect(screen.getByText('0°')).toBeInTheDocument();
+describe('UnitToggle com CurrentWeather', () => {
+  it('exibe 32°F após selecionar Fahrenheit para 0°C', async () => {
+    const user = userEvent.setup();
+    render(<WeatherWithUnitToggle />);
 
-    await userEvent.click(screen.getByRole('button', { name: '°F' }));
-    expect(screen.getByText('32°')).toBeInTheDocument();
+    const group = screen.getByRole('group', { name: 'Unidade de temperatura' });
+    const fahrenheitButton = within(group).getByRole('button', { name: 'Fahrenheit' });
+    await user.click(fahrenheitButton);
+
+    expect(fahrenheitButton).toHaveAttribute('aria-pressed', 'true');
+    const weatherRegion = screen.getByRole('region', { name: 'Clima atual em São Paulo' });
+    expect(within(weatherRegion).getByText('32°F')).toBeInTheDocument();
   });
 
-  it('expõe os botões com estado pressionado acessível', () => {
-    render(<Harness />);
-    expect(screen.getByRole('button', { name: '°C' })).toHaveAttribute('aria-pressed', 'true');
+  it('converte máximas e mínimas da previsão para Fahrenheit', async () => {
+    const user = userEvent.setup();
+    render(<WeatherWithUnitToggle />);
+
+    await user.click(screen.getByRole('button', { name: 'Fahrenheit' }));
+
+    const forecastCard = screen.getByRole('article', { name: 'Previsão para Hoje' });
+    expect(within(forecastCard).getByText('-40 °F')).toBeInTheDocument();
+    expect(within(forecastCard).getByText('212 °F')).toBeInTheDocument();
   });
 });

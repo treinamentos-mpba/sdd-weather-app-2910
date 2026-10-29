@@ -1,47 +1,53 @@
-/**
- * Contratos de domínio compartilhados do Weather App.
- *
- * Decisão de arquitetura: as temperaturas são sempre armazenadas em Celsius
- * internamente e convertidas apenas na camada de apresentação. Assim, a troca
- * de unidade (C/F) nunca dispara um novo request.
- */
-
 export type Unit = 'celsius' | 'fahrenheit';
 
-/** Resultado da API de geocoding (uma cidade). */
 export interface City {
-  id: number;
+  id?: number;
   name: string;
-  country: string;
-  /** Estado/região, quando disponível (ajuda a desambiguar homônimos). */
-  admin1?: string;
   latitude: number;
   longitude: number;
+  adminArea?: string;
+  country?: string;
+  countryCode?: string;
+  timezone?: string;
 }
 
-/** Condições atuais. Temperatura sempre em °C. */
 export interface CurrentWeather {
-  temperature: number;
-  weatherCode: number;
-  humidity: number;
-  windSpeed: number;
-  pressure: number;
-  precipitation: number;
-  time: string;
+  temperatureC?: number;
+  weatherCode?: number;
+  observedAt?: string;
+  humidityPercent?: number;
+  windSpeedKmh?: number;
+  precipitationMm?: number;
+  pressureHpa?: number;
 }
 
-/** Um dia da previsão. Temperaturas sempre em °C. */
 export interface ForecastDay {
   date: string;
-  min: number;
-  max: number;
-  weatherCode: number;
-  precipitationProbability: number;
+  minimumC?: number;
+  maximumC?: number;
+  weatherCode?: number;
+  precipitationProbabilityPercent?: number;
 }
 
-/** Agregado entregue à UI: cidade + clima atual + 5 dias de previsão. */
 export interface WeatherData {
   city: City;
-  current: CurrentWeather;
-  forecast: ForecastDay[];
+  timezone: string;
+  current: CurrentWeather | null;
+  forecastDays: ForecastDay[];
 }
+
+export type WeatherServiceErrorKind = 'network' | 'http' | 'timeout' | 'invalid-response';
+
+export interface WeatherServiceError {
+  kind: WeatherServiceErrorKind;
+  message?: string;
+  status?: number;
+  retryAfterSeconds?: number;
+}
+
+export type RequestState<T> =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: T }
+  | { status: 'empty' }
+  | { status: 'error'; error: WeatherServiceError };
